@@ -223,9 +223,6 @@ src="https://www.facebook.com/tr?id=1466346404944163&ev=PageView&noscript=1"/></
 
     const usaMessages = purchaseMessages.filter((item) => item.country === "USA");
     const ukMessages = purchaseMessages.filter((item) => item.country === "UK");
-    const otherMessages = purchaseMessages.filter(
-      (item) => item.country !== "USA" && item.country !== "UK"
-    );
 
     const SHOW_TIME = 4000;
     const INTERVAL_TIME = 6000;
@@ -233,17 +230,48 @@ src="https://www.facebook.com/tr?id=1466346404944163&ev=PageView&noscript=1"/></
 
     let notificationCount = 0;
 
+    function shuffle(items) {
+      const arr = items.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // "sacola" que so repete uma pessoa/cidade depois de esgotar todas as outras
+    function createBag(items) {
+      let bag = [];
+      let lastItem = null;
+
+      function refill() {
+        bag = shuffle(items);
+        if (lastItem && bag[bag.length - 1] === lastItem && bag.length > 1) {
+          [bag[bag.length - 1], bag[bag.length - 2]] = [bag[bag.length - 2], bag[bag.length - 1]];
+        }
+      }
+
+      refill();
+
+      return function next() {
+        if (bag.length === 0) refill();
+        const item = bag.pop();
+        lastItem = item;
+        return item;
+      };
+    }
+
+    const nextUsaItem = createBag(usaMessages);
+    const nextUkItem = createBag(ukMessages);
+
     function pickNotificationItem() {
       notificationCount++;
       const position = notificationCount % 5;
-      // a cada 5 notificacoes: a 4a e dos EUA e a 5a (que fecha o ciclo) e do UK
-      if (position === 4) {
-        return usaMessages[Math.floor(Math.random() * usaMessages.length)];
-      }
+      // a cada 5 notificacoes: 1a-4a sao dos EUA e a 5a (que fecha o ciclo) e do UK
       if (position === 0) {
-        return ukMessages[Math.floor(Math.random() * ukMessages.length)];
+        return nextUkItem();
       }
-      return otherMessages[Math.floor(Math.random() * otherMessages.length)];
+      return nextUsaItem();
     }
 
     function showRandomNotification() {
