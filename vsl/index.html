@@ -88,13 +88,25 @@ src="https://www.facebook.com/tr?id=1466346404944163&ev=PageView&noscript=1"/></
       z-index: 9999;
       opacity: 0;
       transform: translateY(-20px);
-      
+
       transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
     .purchase-notification.show {
       opacity: 1;
       transform: translateY(0);
+    }
+
+    @media (max-width: 767px) {
+      .purchase-notification {
+        right: auto;
+        left: 50%;
+        top: 90px;
+        transform: translate(-50%, -20px);
+      }
+      .purchase-notification.show {
+        transform: translate(-50%, 0);
+      }
     }
 
     .purchase-notification-title {
@@ -209,12 +221,33 @@ src="https://www.facebook.com/tr?id=1466346404944163&ev=PageView&noscript=1"/></
     const notificationEl = document.getElementById("purchaseNotification");
     const notificationTextEl = document.getElementById("purchaseNotificationText");
 
+    const usaMessages = purchaseMessages.filter((item) => item.country === "USA");
+    const ukMessages = purchaseMessages.filter((item) => item.country === "UK");
+    const otherMessages = purchaseMessages.filter(
+      (item) => item.country !== "USA" && item.country !== "UK"
+    );
+
     const SHOW_TIME = 4000;
     const INTERVAL_TIME = 6000;
-    const START_DELAY = 540000; // 540 segundos (9 minutos)
+    const START_DELAY = 576000; // 576 segundos (9 minutos e 36 segundos)
+
+    let notificationCount = 0;
+
+    function pickNotificationItem() {
+      notificationCount++;
+      const position = notificationCount % 5;
+      // a cada 5 notificacoes: a 4a e dos EUA e a 5a (que fecha o ciclo) e do UK
+      if (position === 4) {
+        return usaMessages[Math.floor(Math.random() * usaMessages.length)];
+      }
+      if (position === 0) {
+        return ukMessages[Math.floor(Math.random() * ukMessages.length)];
+      }
+      return otherMessages[Math.floor(Math.random() * otherMessages.length)];
+    }
 
     function showRandomNotification() {
-      const randomItem = purchaseMessages[Math.floor(Math.random() * purchaseMessages.length)];
+      const randomItem = pickNotificationItem();
       notificationTextEl.innerHTML =
         `<strong>${randomItem.name} from <strong>${randomItem.city}, ${randomItem.country}`;
 
