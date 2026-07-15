@@ -88,13 +88,25 @@ src="https://www.facebook.com/tr?id=1466346404944163&ev=PageView&noscript=1"/></
       z-index: 9999;
       opacity: 0;
       transform: translateY(-20px);
-      
+
       transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
     .purchase-notification.show {
       opacity: 1;
       transform: translateY(0);
+    }
+
+    @media (max-width: 767px) {
+      .purchase-notification {
+        right: auto;
+        left: 50%;
+        top: 90px;
+        transform: translate(-50%, -20px);
+      }
+      .purchase-notification.show {
+        transform: translate(-50%, 0);
+      }
     }
 
     .purchase-notification-title {
@@ -209,12 +221,61 @@ src="https://www.facebook.com/tr?id=1466346404944163&ev=PageView&noscript=1"/></
     const notificationEl = document.getElementById("purchaseNotification");
     const notificationTextEl = document.getElementById("purchaseNotificationText");
 
+    const usaMessages = purchaseMessages.filter((item) => item.country === "USA");
+    const ukMessages = purchaseMessages.filter((item) => item.country === "UK");
+
     const SHOW_TIME = 4000;
     const INTERVAL_TIME = 6000;
-    const START_DELAY = 540000; // 540 segundos (9 minutos)
+    const START_DELAY = 576000; // 576 segundos (9 minutos e 36 segundos)
+
+    let notificationCount = 0;
+
+    function shuffle(items) {
+      const arr = items.slice();
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // "sacola" que so repete uma pessoa/cidade depois de esgotar todas as outras
+    function createBag(items) {
+      let bag = [];
+      let lastItem = null;
+
+      function refill() {
+        bag = shuffle(items);
+        if (lastItem && bag[bag.length - 1] === lastItem && bag.length > 1) {
+          [bag[bag.length - 1], bag[bag.length - 2]] = [bag[bag.length - 2], bag[bag.length - 1]];
+        }
+      }
+
+      refill();
+
+      return function next() {
+        if (bag.length === 0) refill();
+        const item = bag.pop();
+        lastItem = item;
+        return item;
+      };
+    }
+
+    const nextUsaItem = createBag(usaMessages);
+    const nextUkItem = createBag(ukMessages);
+
+    function pickNotificationItem() {
+      notificationCount++;
+      const position = notificationCount % 5;
+      // a cada 5 notificacoes: 1a-4a sao dos EUA e a 5a (que fecha o ciclo) e do UK
+      if (position === 0) {
+        return nextUkItem();
+      }
+      return nextUsaItem();
+    }
 
     function showRandomNotification() {
-      const randomItem = purchaseMessages[Math.floor(Math.random() * purchaseMessages.length)];
+      const randomItem = pickNotificationItem();
       notificationTextEl.innerHTML =
         `<strong>${randomItem.name} from <strong>${randomItem.city}, ${randomItem.country}`;
 
